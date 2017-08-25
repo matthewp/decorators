@@ -1,0 +1,76 @@
+<!doctype html>
+
+<title>Decorator idea</title>
+
+<script type="module">
+  class Decorator extends HTMLElement {
+      connectedCallback() {
+        // Do the whole weird children thing, I guess.
+        this.template = this.querySelector('template');
+      }
+  }
+
+  customElements.define('x-decorator', Decorator);
+
+  class DecoratorApply extends HTMLElement {
+    constructor() {
+      super();
+    }
+
+    connectedCallback() {
+      this._apply();
+    }
+
+    _apply() {
+      this._applied = true;
+      const doc = this.ownerDocument;
+
+      // Should probably look within the given tree
+      const decorator = doc.querySelector(this.getAttribute('decorator'));
+      const elements = doc.querySelectorAll(this.getAttribute('select'));
+
+      for(let element of elements) {
+        try {
+          element.attachShadow({mode:'open'});
+        } catch(er) {
+          // Not supported
+          const replacement = doc.createElement('div');
+          replacement.attachShadow({mode:'open'});
+          element.parentNode.replaceChild(replacement, element);
+          replacement.appendChild(element);
+          element = replacement;
+        }
+
+        const fragment = doc.importNode(decorator.template.content, true);
+        element.shadowRoot.appendChild(fragment);
+      }
+    }
+  }
+
+  customElements.define('x-decorator-apply', DecoratorApply);
+</script>
+
+
+
+
+<x-decorator id="fancy-button">
+  <template>
+    <style>
+      .border {
+        display: inline;
+        border: 5px solid red;
+      }
+    </style>
+    <div class="border">
+      <slot></slot>
+    </div>
+  </template>
+</x-decorator>
+
+<x-decorator-apply decorator="#fancy-button"
+  select="button.fancy"></x-decorator-apply>
+
+<button class="fancy">Click me</button>
+
+
+ 
